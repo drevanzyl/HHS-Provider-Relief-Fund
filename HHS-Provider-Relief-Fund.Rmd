@@ -61,10 +61,24 @@ HHSProviderReliefFund <-
         HHSProviderReliefFund %>% mutate(state = as.factor(state),
                                   city = as.factor(city),
                                   payment_number = as.numeric(( gsub( "[\\$,.]", "", payment)))
-                                ) 
+                                ) %>%
+  select(-payment)
+
+
 
 HHSProviderReliefFund <- HHSProviderReliefFund %>% arrange(desc(payment_number))
+
+
+
 ```
+
+```{r}
+HHSProviderReliefFundSummary <- HHSProviderReliefFund %>% group_by(state) %>% summarise(payment_sum = sum(payment_number, na.rm = TRUE) ) %>% arrange(desc(payment_sum))
+HHSProviderReliefFundSummary
+```
+
+
+
 ```{r summary, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
 summary(HHSProviderReliefFund)
 ```
@@ -112,7 +126,9 @@ wordcloud2(data=df, size=1.6, color='random-dark')
 ```{r upload-VendorPayments-Data, message=FALSE, warning=FALSE, cache=TRUE, cache.extra=Sys.Date()}
 
 #googledrive::drive_auth() 
-1
+openxlsx::write.xlsx(list("HHS Provider Relief Fund" = HHSProviderReliefFund) , here("data/HHS Provider Relief Fund.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
+#googledrive::drive_upload(media ="Atlanta.xlsx",   type = "spreadsheet", overwrite = TRUE) 
+googledrive::drive_update(media =here("data/HHS Provider Relief Fund.xlsx"), file = as_id("1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY"))
 ```
 
 
