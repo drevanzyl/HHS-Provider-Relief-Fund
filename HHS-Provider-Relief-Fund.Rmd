@@ -31,6 +31,8 @@ library("RColorBrewer")
 library("wordcloud2")
 
 `%notin%` <- Negate(`%in%`)
+options(scipen = 999)
+
 ```
 
 
@@ -62,6 +64,9 @@ HHSProviderReliefFund <-
                                 ) 
 
 HHSProviderReliefFund <- HHSProviderReliefFund %>% arrange(desc(payment_number))
+```
+```{r summary, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
+summary(HHSProviderReliefFund)
 ```
 
 
@@ -107,9 +112,7 @@ wordcloud2(data=df, size=1.6, color='random-dark')
 ```{r upload-VendorPayments-Data, message=FALSE, warning=FALSE, cache=TRUE, cache.extra=Sys.Date()}
 
 #googledrive::drive_auth() 
-openxlsx::write.xlsx(list("HHS Provider Relief Fund" = HHSProviderReliefFund) , here("data/HHS Provider Relief Fund.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
-#googledrive::drive_upload(media ="data/HHS Provider Relief Fund.xlsx",   type = "spreadsheet", overwrite = TRUE) 
-googledrive::drive_update(media =here("data/HHS Provider Relief Fund.xlsx"), file = as_id("1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY"))
+1
 ```
 
 
