@@ -1,0 +1,134 @@
+---
+title: "HHS-Provider-Relief-Fund"
+knit: (function(input_file, encoding) {
+  out_dir <- 'docs';
+  rmarkdown::render(input_file,
+ encoding=encoding,
+ output_file=file.path(dirname(input_file), out_dir, 'index.html'))})
+output:
+  html_document:
+    css: style.css
+    df_print: paged
+    theme: darkly
+    toc: true
+    toc_float: true
+    code_folding: hide
+---
+
+
+
+```{r message=FALSE, warning=FALSE}
+library("htmltools")
+library("here")
+library("dplyr")
+library("RSocrata")
+library("tidyverse")
+library("openxlsx") 
+library("googledrive")
+library("knitr")
+library("wordcloud")
+library("RColorBrewer")
+library("wordcloud2")
+
+`%notin%` <- Negate(`%in%`)
+```
+
+
+
+# Getting the Data
+
+```{r HHSProviderReliefFund, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
+## Install the required package with:
+## install.packages("RSocrata")
+library("dplyr")
+library("RSocrata")
+library("tidyverse")
+
+HHSProviderReliefFund <- read.socrata(
+  "https://data.cdc.gov/resource/kh8y-3es6.json"
+)
+
+```
+
+
+# Processing the Data
+
+
+```{r message=FALSE, warning=FALSE}
+HHSProviderReliefFund <-
+        HHSProviderReliefFund %>% mutate(state = as.factor(state),
+                                  city = as.factor(city),
+                                  payment_number = as.numeric(( gsub( "[\\$,.]", "", payment)))
+                                ) 
+
+HHSProviderReliefFund <- HHSProviderReliefFund %>% arrange(desc(payment_number))
+```
+
+
+
+# Word Cloud
+
+```{r unit_name_words, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
+#install.packages("tm")
+library(tm)
+#Create a vector containing only the text
+text <- HHSProviderReliefFund %>% 
+  #head(nrow(HHSProviderReliefFund)/1) %>% 
+  select(provider_name)
+# Create a corpus  
+docs <- Corpus(VectorSource(text))
+docs <- docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace)
+docs <- tm_map(docs, content_transformer(tolower))
+docs <- tm_map(docs, removeWords, stopwords("english"))
+
+dtm <- TermDocumentMatrix(docs) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df <- data.frame(word = names(words),freq=words)
+
+df <- df %>% arrange(desc(freq) )  %>% filter(word %notin% c("llc", "inc", "dds"))
+
+df
+```
+
+
+```{r unit_name_words_cloud, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
+set.seed(1234) # for reproducibility 
+wordcloud2(data=df, size=1.6, color='random-dark')
+```
+
+
+
+# Upload Data to Goodle Drive
+
+```{r upload-VendorPayments-Data, message=FALSE, warning=FALSE, cache=TRUE, cache.extra=Sys.Date()}
+
+#googledrive::drive_auth() 
+openxlsx::write.xlsx(list("HHS Provider Relief Fund" = HHSProviderReliefFund) , here("data/HHS Provider Relief Fund.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
+#googledrive::drive_upload(media ="data/HHS Provider Relief Fund.xlsx",   type = "spreadsheet", overwrite = TRUE) 
+googledrive::drive_update(media =here("data/HHS Provider Relief Fund.xlsx"), file = as_id("1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY"))
+```
+
+
+The processed data can be found on [Google Sheets](https://docs.google.com/spreadsheets/d/1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY).
+
+
+# Present Data in Tableau
+
+The processed data stored in Google Sheets is used in [Tableau Public](https://public.tableau.com/s/) to generate [interactive visualizations](https://public.tableau.com/app/profile/andr.van.zyl/viz/Atlanta_16292337333820/About). 
+
+```{r message=FALSE, warning=FALSE}
+includeHTML(path = here("docs/tableau-dashboard.html")) 
+```
+
+# Pushing Updates to GitHub
+
+```{r eval=FALSE, include=FALSE}
+library(gitcreds)
+
+gitcreds_set()
+```
+
