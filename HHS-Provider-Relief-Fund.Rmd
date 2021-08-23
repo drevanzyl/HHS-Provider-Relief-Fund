@@ -29,15 +29,35 @@ library("knitr")
 library("wordcloud")
 library("RColorBrewer")
 library("wordcloud2")
-
+library("DT")
 `%notin%` <- Negate(`%in%`)
 options(scipen = 999)
+source("private.R")
 
 ```
+# About
+
+HHS is providing support to healthcare providers fighting the coronavirus disease 2019 (COVID-19) pandemic through the bipartisan Coronavirus Aid, Relief, & Economic Security (CARES) Act; the Paycheck Protection Program and Health Care Enhancement Act (PPPHCEA); and the Coronavirus Response and Relief Supplemental Appropriations (CRRSA) Act, which provide a total of $178 billion for relief funds to hospitals and other healthcare providers on the front lines of the COVID-19 response. This funding supports healthcare-related expenses or lost revenue attributable to COVID-19 and ensures uninsured Americans can get treatment for COVID-19. HHS is distributing this Provider Relief Fund (PRF) money and these payments do not need to be repaid.
+
+The Department allocated $50 billion in PRF payments for general distribution to Medicare facilities and providers impacted by COVID-19, based on eligible providers' net reimbursement. HHS has made other PRF distributions to a wide array of health care providers and more information on those distributions can be found here: https://www.hhs.gov/coronavirus/cares-act-provider-relief-fund/data/index.html
+
+
+https://taggs.hhs.gov/Coronavirus/Providers
+
+https://www.hrsa.gov/provider-relief/
+
+https://data.cdc.gov/Administrative/Claims-Reimbursement-to-Health-Care-Providers-and-/rksx-33p3
 
 
 
 # Getting the Data
+
+| **Column Name** | **Column ID** | **Description**                                                                | **Type**   |
+| :-------------- | :------------ | :----------------------------------------------------------------------------- | :--------- |
+| Provider Name   | provider_name | Provider name associated with the billing TIN to whom the payment was issued.  | Plain Text |
+| State           | state         |                                                                                | Plain Text |
+| City            | city          |                                                                                | Plain Text |
+| Payment         | payment       | The total (cumulative) payment that the provider has received AND attested to. | Plain Text |
 
 ```{r HHSProviderReliefFund, cache=TRUE, cache.extra = Sys.Date(), message=FALSE, warning=FALSE}
 ## Install the required package with:
@@ -49,7 +69,17 @@ library("tidyverse")
 HHSProviderReliefFund <- read.socrata(
   "https://data.cdc.gov/resource/kh8y-3es6.json"
 )
+skimr::skim(HHSProviderReliefFund) 
+```
 
+
+```{r}
+nrow(HHSProviderReliefFund)
+```
+
+
+```{r}
+nrow(HHSProviderReliefFund |> distinct())
 ```
 
 
@@ -68,9 +98,15 @@ HHSProviderReliefFund <-
 
 HHSProviderReliefFund <- HHSProviderReliefFund %>% arrange(desc(payment_number))
 
-
+DT::datatable(head(HHSProviderReliefFund, 1000) )
 
 ```
+
+
+
+
+
+
 
 ```{r}
 HHSProviderReliefFundSummary <- HHSProviderReliefFund %>% group_by(state) %>% summarise(payment_sum = sum(payment_number, na.rm = TRUE) ) %>% arrange(desc(payment_sum))
@@ -124,12 +160,31 @@ wordcloud2(data=df, size=1.6, color='random-dark')
 # Upload Data to Goodle Drive
 
 ```{r upload-VendorPayments-Data, message=FALSE, warning=FALSE, cache=TRUE, cache.extra=Sys.Date()}
+# drive_auth(email = "jenny@example.com")
+# num_groups = 2
+# 
+# HHSProviderReliefFundSplit <- HHSProviderReliefFund %>% 
+#    group_by((row_number()-1) %/% (n()/num_groups)) %>%
+#    nest %>% pull(data)
+# HHSProviderReliefFundSplit[[1]]
+# HHSProviderReliefFundSplit[[2]]
 
-#googledrive::drive_auth() 
-openxlsx::write.xlsx(list("HHS Provider Relief Fund" = HHSProviderReliefFund) , here("data/HHS Provider Relief Fund.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
-#googledrive::drive_upload(media ="Atlanta.xlsx",   type = "spreadsheet", overwrite = TRUE) 
-googledrive::drive_update(media =here("data/HHS Provider Relief Fund.xlsx"), file = as_id("1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY"))
+openxlsx::write.xlsx(list("HHS Provider Relief Fund All" = HHSProviderReliefFund) , here("data/HHS Provider Relief Fund All.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
+
+# #googledrive::drive_auth() 
+# openxlsx::write.xlsx(list("HHS Provider Relief Fund" = HHSProviderReliefFundSplit[[1]]) , here("data/HHS Provider Relief Fund 1.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
+# openxlsx::write.xlsx(list("HHS Provider Relief Fund 2" = HHSProviderReliefFundSplit[[2]]) , here("data/HHS Provider Relief Fund 2.xlsx"), overwrite = TRUE, asTable = TRUE, freezePane = c("firstRow"), colWidths = "auto", withFilter = TRUE) 
+# 
+# #googledrive::drive_upload(media =here("data/HHS Provider Relief Fund 2.xlsx"),   type = "spreadsheet", overwrite = TRUE) 
+# googledrive::drive_update(media =here("data/HHS Provider Relief Fund 1.xlsx"), file = as_id("1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY"))
+# 
+# googledrive::drive_update(media =here("data/HHS Provider Relief Fund 2.xlsx"), file = as_id("1gRZq4jWkJSJJMFkqo610b-NjEKyigsT3WJBPdn8J6jo"))
+
+googledrive::drive_update(media =here("data/HHS Provider Relief Fund All.xlsx"), file = as_id("1yWozJow3ksgKhi9GjQTnFwLD0Hg2U7jl"))
+
 ```
+1gRZq4jWkJSJJMFkqo610b-NjEKyigsT3WJBPdn8J6jo
+
 
 
 The processed data can be found on [Google Sheets](https://docs.google.com/spreadsheets/d/1Jl41HesB8z21IS4XF9QZ1HpF_ykOR1X_4Linl1jp9WY).
